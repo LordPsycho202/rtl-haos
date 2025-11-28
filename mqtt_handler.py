@@ -3,7 +3,7 @@
 FILE: mqtt_handler.py
 DESCRIPTION:
   Manages the connection to the MQTT Broker.
-  - UPDATED: Auto-detects 'radio_status' fields as Main Sensors (not diagnostic).
+  - UPDATED: Support for custom friendly names (e.g. "Weather Radio Status").
 """
 import json
 import threading
@@ -51,7 +51,7 @@ class HomeNodeMQTT:
         self.client.loop_stop()
         self.client.disconnect()
 
-    def _publish_discovery(self, sensor_name, state_topic, unique_id, device_name, device_model):
+    def _publish_discovery(self, sensor_name, state_topic, unique_id, device_name, device_model, friendly_name_override=None):
         unique_id = f"{unique_id}{config.ID_SUFFIX}"
 
         with self.discovery_lock:
@@ -60,34 +60,38 @@ class HomeNodeMQTT:
 
             default_meta = (None, "none", "mdi:eye", sensor_name.replace("_", " ").title())
             
-            # --- 1. SMART METADATA LOOKUP ---
-            # If this is a dynamic radio status (e.g. radio_status_101),
-            # inherit the icon/settings from the base 'radio_status' entry.
-            if sensor_name.startswith("radio_status_"):
+            # --- 1. METADATA LOOKUP (Get Icon/Unit/Class) ---
+            # We separate metadata lookup from naming so we can override the name 
+            # while keeping the correct icon (e.g. mdi:usb-port for radio_status).
+            if sensor_name.startswith("radio_status"):
                 base_meta = FIELD_META.get("radio_status", default_meta)
-                unit, device_class, icon, base_friendly_name = base_meta
-                
-                # Append the suffix (ID) to the name
-                suffix = sensor_name.replace("radio_status_", "")
-                friendly_name = f"{base_friendly_name} {suffix}"
+                unit, device_class, icon, default_fname = base_meta
             else:
-                # Standard lookup for normal sensors
                 meta = FIELD_META.get(sensor_name, default_meta)
                 try:
-                    unit, device_class, icon, friendly_name = meta
+                    unit, device_class, icon, default_fname = meta
                 except ValueError:
-                    unit, device_class, icon, friendly_name = default_meta
+                    unit, device_class, icon, default_fname = default_meta
 
-            # --- 2. CATEGORIZATION LOGIC ---
-            # Default: Everything is a Diagnostic sensor (hidden/separate menu)
+            # --- 2. FRIENDLY NAME LOGIC ---
+            if friendly_name_override:
+                # Use the custom name passed from the bridge (e.g. "Weather Radio Status")
+                friendly_name = friendly_name_override
+            elif sensor_name.startswith("radio_status_"):
+                # Fallback if no override: "Radio Status 101"
+                suffix = sensor_name.replace("radio_status_", "")
+                friendly_name = f"{default_fname} {suffix}"
+            else:
+                friendly_name = default_fname
+
+            # --- 3. CATEGORIZATION LOGIC ---
             entity_cat = "diagnostic"
 
             # EXCEPTION A: Explicitly listed in config.MAIN_SENSORS
             if sensor_name in getattr(config, 'MAIN_SENSORS', []):
                 entity_cat = None 
             
-            # EXCEPTION B: It is a Radio Status field (Clean Fix)
-            # This ensures they are always visible without editing config.py
+            # EXCEPTION B: It is a Radio Status field
             if sensor_name.startswith("radio_status"):
                 entity_cat = None
 
@@ -107,7 +111,6 @@ class HomeNodeMQTT:
             if unit: payload["unit_of_measurement"] = unit
             if device_class != "none": payload["device_class"] = device_class
             
-            # Only add entity_category if it is NOT None (i.e., if it is diagnostic)
             if entity_cat: payload["entity_category"] = entity_cat
 
             if device_class in ["gas", "energy", "water", "monetary"]:
@@ -122,7 +125,11 @@ class HomeNodeMQTT:
             self.client.publish(config_topic, json.dumps(payload), retain=True)
             self.discovery_published.add(unique_id)
 
-    def send_sensor(self, sensor_id, field, value, device_name, device_model, is_rtl=True):
+    def send_sensor(self, sensor_id, field, value, device_name, device_model, is_rtl=True, friendly_name=None):
+        """
+        Sends a sensor update.
+        optional: friendly_name (str) - Overrides the default naming logic.
+        """
         if value is None: return
 
         self.tracked_devices.add(device_name)
@@ -134,7 +141,7 @@ class HomeNodeMQTT:
         unique_id = f"{unique_id_base}_{field}"
         state_topic = f"home/rtl_devices/{state_topic_base}/{field}" 
 
-        self._publish_discovery(field, state_topic, unique_id, device_name, device_model)
+        self._publish_discovery(field, state_topic, unique_id, device_name, device_model, friendly_name_override=friendly_name)
 
         unique_id_v2 = f"{unique_id}{config.ID_SUFFIX}"
         
