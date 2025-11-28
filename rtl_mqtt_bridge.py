@@ -117,6 +117,45 @@ def throttle_flush_loop(mqtt_handler):
         if getattr(config, "DEBUG_RAW_JSON", False) and count_sent > 0:
             print(f"[THROTTLE] Flushed {count_sent} averaged readings.")
 
+def discover_default_rtl_serial():
+    """
+    Try to read the serial number of the default RTL-SDR using rtl_eeprom.
+    Returns the serial string, or None if it can't be determined.
+    """
+    try:
+        proc = subprocess.run(
+            ["rtl_eeprom"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except FileNotFoundError:
+        print("[STARTUP] rtl_eeprom not found; cannot auto-detect RTL-SDR serial.")
+        return None
+    except Exception as e:
+        print(f"[STARTUP] Error running rtl_eeprom: {e}")
+        return None
+
+    output = (proc.stdout or "") + (proc.stderr or "")
+    serial = None
+
+    for line in output.splitlines():
+        line = line.strip()
+        # Typical lines contain "Serial number:" or "S/N:"
+        if "Serial number" in line or "serial number" in line or "S/N" in line:
+            parts = line.split(":", 1)
+            if len(parts) == 2:
+                candidate = parts[1].strip()
+                if candidate:
+                    serial = candidate.split()[0]
+                    break
+
+    if serial:
+        return serial
+
+    print("[STARTUP] Could not parse RTL-SDR serial from rtl_eeprom output.")
+    return None
+
 # ---------------- RTL433 LOOP (UPDATED) ----------------
 def rtl_loop(radio_config: dict, mqtt_handler: HomeNodeMQTT, sys_id: str, sys_model: str) -> None:
     # Radio Config
@@ -266,12 +305,39 @@ def main():
 
     # --- 2. START RTL THREADS ---
     rtl_config = getattr(config, "RTL_CONFIG", None)
+
     if rtl_config:
+        # Explicit radios from config.py
         for radio in rtl_config:
-            # Pass sys_id and sys_model so the status sensor groups correctly
-            threading.Thread(target=rtl_loop, args=(radio, mqtt_handler, sys_id, sys_model), daemon=True).start()
+            threading.Thread(
+                target=rtl_loop,
+                args=(radio, mqtt_handler, sys_id, sys_model),
+                daemon=True,
+            ).start()
     else:
-        threading.Thread(target=rtl_loop, args=({}, mqtt_handler, sys_id, sys_model), daemon=True).start()
+        # AUTO MODE: no RTL_CONFIG defined or it's empty.
+        # Try to detect the actual RTL-SDR serial so we can use it as the ID.
+        auto_serial = discover_default_rtl_serial()
+
+        if auto_serial:
+            print(f"[STARTUP] Auto-detected RTL-SDR serial: {auto_serial}")
+            auto_radio = {
+                "name": f"RTL_{auto_serial}",
+                "id": auto_serial,
+            }
+        else:
+            # Fallback if we can't read the serial
+            print("[STARTUP] Using default RTL-SDR id '0'")
+            auto_radio = {
+                "name": "RTL_auto",
+                "id": "0",
+            }
+
+        threading.Thread(
+            target=rtl_loop,
+            args=(auto_radio, mqtt_handler, sys_id, sys_model),
+            daemon=True,
+        ).start()
 
     # --- 3. START SYSTEM MONITOR ---
     threading.Thread(target=system_stats_loop, args=(mqtt_handler, sys_id, sys_model), daemon=True).start()
