@@ -56,7 +56,7 @@ The goal is a “drop-in” bridge: plug in RTL-SDR(s), run this script, and wat
 1.  **Install System Dependencies** (Debian/Ubuntu/Raspberry Pi):
     ```bash
     sudo apt update
-    sudo apt install rtl-433 git pip python3-psutil python-paho-mqtt python3-paho-mqtt
+    sudo apt install rtl-433 git python pip python3-psutil python-paho-mqtt python3-paho-mqtt
     ```
 
 2.  **Clone the Repository:**
