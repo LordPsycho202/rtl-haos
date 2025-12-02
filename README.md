@@ -87,13 +87,15 @@ graph TD
 |:---:|:---:|
 | <img width="514" height="653" alt="image" src="https://github.com/user-attachments/assets/04939cba-dfa0-44fb-bb33-2c50db6a13ad" /> | <img width="329" height="858" alt="image" src="https://github.com/user-attachments/assets/723a5454-4876-4f86-af86-a10b3bba516e" /> |
 
+| Signal Diagnosis Using  SNR |
+|:---:|
+| <img width="566" height="499" alt="image" src="https://github.com/user-attachments/assets/93a22bc7-aa6f-4f88-8bdf-276ecb7cf383" /> |
+
 | Efficacy Diagnosis Using Historical Gas Meter and Room Temperature Data |
 |:---:|
 | <img width="1656" height="810" alt="Screenshot_20251129_090052_s" src="https://github.com/user-attachments/assets/267d057e-c6a8-4c96-9b92-6a268efd7a4a" /> |
 
-| Signal Diagnosis Using  SNR |
-|:---:|
-| <img width="566" height="499" alt="image" src="https://github.com/user-attachments/assets/93a22bc7-aa6f-4f88-8bdf-276ecb7cf383" /> |
+
 
 ---
 ## 📂 Project Layout
