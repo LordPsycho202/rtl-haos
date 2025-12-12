@@ -327,7 +327,7 @@ def rtl_loop(radio_config: dict, mqtt_handler: HomeNodeMQTT, sys_id: str, sys_mo
 
 def main():
     ver = get_version()
-    print(f"--- RTL-MQTT BRIDGE + SYSTEM MONITOR ({ver}) ---")
+    print(f"--- RTL-HAOS ({ver}) ---")
 
     mqtt_handler = HomeNodeMQTT()
     mqtt_handler.start()
@@ -342,7 +342,7 @@ def main():
     # This sends a static sensor "Bridge Version" to the Host device
     mqtt_handler.send_sensor(
         sys_id, 
-        "bridge_version", 
+        "rtl-haos_version", 
         ver, 
         sys_name, 
         sys_model, 
