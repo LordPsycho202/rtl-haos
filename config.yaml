@@ -17,7 +17,7 @@ options:
   mqtt_port: 1883
   mqtt_user: ""
   mqtt_pass: ""
-  bridge_id: ""                   
+  bridge_id: "42"                   
   bridge_name: "rtl-haos-bridge"
   rtl_expire_after: 600
   rtl_throttle_interval: 30

@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     )
 
     bridge_id: str = Field(
-        default="", 
+        default="42", 
         description="Static unique ID for the bridge"
     )
 
