@@ -3,7 +3,7 @@
 FILE: rtl_mqtt_bridge.py
 DESCRIPTION:
   The main executable script.
-  - UPDATED: Now prints Git Revision on startup.
+  - UPDATED: Reads version exclusively from config.yaml.
   - UPDATED: Captures and prints raw stderr from rtl_433 failures.
 """
 import subprocess
@@ -14,6 +14,7 @@ import sys
 import importlib.util
 import fnmatch
 import socket
+import os
 import statistics 
 from rich import print
 
@@ -45,16 +46,24 @@ DATA_BUFFER = {}
 BUFFER_LOCK = threading.Lock()
 
 # ---------------- HELPERS ----------------
-def get_revision():
-    """Attempts to retrieve the current git commit short hash."""
+def get_version():
+    """
+    Retrieves the version string from config.yaml.
+    """
     try:
-        rev = subprocess.check_output(
-            ["git", "rev-parse", "--short", "HEAD"], 
-            stderr=subprocess.STDOUT
-        ).decode().strip()
-        return rev
+        # Look for config.yaml in the same directory as this script
+        cfg_path = os.path.join(os.path.dirname(__file__), "config.yaml")
+        if os.path.exists(cfg_path):
+            with open(cfg_path, "r") as f:
+                for line in f:
+                    # Look for line: version: "1.0.1"
+                    if line.strip().startswith("version:"):
+                        ver = line.split(":", 1)[1].strip().replace('"', '').replace("'", "")
+                        return f"v{ver}"
     except Exception:
-        return "Unknown"
+        pass
+
+    return "Unknown"
 
 def flatten(d, sep: str = "_") -> dict:
     obj = {}
@@ -322,8 +331,8 @@ def rtl_loop(radio_config: dict, mqtt_handler: HomeNodeMQTT, sys_id: str, sys_mo
         time.sleep(30)
 
 def main():
-    rev = get_revision()
-    print(f"--- RTL-MQTT BRIDGE + SYSTEM MONITOR STARTING [Rev: {rev}] ---")
+    ver = get_version()
+    print(f"--- RTL-MQTT BRIDGE + SYSTEM MONITOR STARTING [{ver}] ---")
 
     mqtt_handler = HomeNodeMQTT()
     mqtt_handler.start()
