@@ -1,6 +1,7 @@
 # Changelog
 
-## v1.0.14
+## v1.0.15
+- **FIX:** rtl-haos revision should not time out.
 - **NEW:** Added `BRIDGE_ID` configuration to keep the Device ID static across reboots.
 - **NEW:** Added `BRIDGE_NAME` to allow custom friendly names (ignoring the Docker hostname).
 - **FIX:** Fixed issue where Home Assistant created duplicate devices after every restart.
