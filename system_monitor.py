@@ -11,7 +11,6 @@ import threading
 import sys
 import importlib.util
 import socket
-from rich import print
 # --- IMPORTS & DEPENDENCY CHECK ---
 PSUTIL_AVAILABLE = False
 try:
@@ -102,7 +101,7 @@ def system_stats_loop(mqtt_handler, DEVICE_ID, MODEL_NAME):
 
 if __name__ == "__main__":
     BASE_DEVICE_ID = get_system_mac().replace(":","").lower()
-    BASE_MODEL_NAME = socket.gethostname().title() 
+    BBASE_MODEL_NAME = config.BRIDGE_NAME
     
     print(f"--- SYSTEM MONITOR STARTING ---")
 

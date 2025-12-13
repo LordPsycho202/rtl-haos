@@ -56,6 +56,8 @@ if [ -f /data/options.json ]; then
         export MQTT_PORT=$(bashio::services mqtt "port")
         export MQTT_USER=$(bashio::services mqtt "username")
         export MQTT_PASS=$(bashio::services mqtt "password")
+        export BRIDGE_ID=$(bashio::config 'bridge_id')
+        export BRIDGE_NAME=$(bashio::config 'bridge_name')
     fi
 
     bashio::log.info "Starting RTL-HAOS bridge..."
@@ -66,4 +68,4 @@ else
     echo "[STARTUP] MQTT Host: ${MQTT_HOST:-localhost}:${MQTT_PORT:-1883}"
 fi
 
-exec python3 /app/rtl_mqtt_bridge.py
+exec python3 /app/main.py

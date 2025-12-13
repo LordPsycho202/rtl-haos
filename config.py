@@ -34,6 +34,17 @@ class Settings(BaseSettings):
         default_factory=list, description="List of RTL-SDR radio configurations"
     )
 
+    bridge_id: str = Field(
+        default="42", 
+        description="Static unique ID for the bridge"
+    )
+
+    # NEW: Friendly Display Name
+    bridge_name: str = Field(
+        default="rtl-haos-bridge", 
+        description="The friendly name shown in Home Assistant"
+    )
+
     # Keys to skip when publishing sensor data
     skip_keys: list[str] = Field(
         default_factory=lambda: ["time", "protocol", "mod", "id"],
@@ -113,6 +124,10 @@ class Settings(BaseSettings):
 
 # Global settings instance
 settings = Settings()
+
+BRIDGE_ID = settings.bridge_id
+
+BRIDGE_NAME = settings.bridge_name
 
 # Convenience aliases for backward compatibility
 MQTT_SETTINGS = {
