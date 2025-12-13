@@ -1,32 +1,31 @@
 #!/usr/bin/env python3
-"""
-FILE: main.py
-DESCRIPTION:
-  The main executable script.
-  - Checks dependencies.
-  - Starts MQTT Handler.
-  - Starts Data Processor (Throttling).
-  - Starts RTL Managers (Radios).
-  - Starts System Monitor.
-"""
 import builtins
+import sys
 from datetime import datetime
 
-# --- 1. GLOBAL TIMESTAMP OVERRIDE ---
-# Save the original print function so we don't cause an infinite recursion
+# --- BASHIO STYLE LOGGER ---
+# Save original print
 _original_print = builtins.print
 
-def timestamped_print(*args, **kwargs):
-    """Adds a timestamp to every print() call."""
-    # Format: [18:05:00] INFO:
+def bashio_print(*args, **kwargs):
+    """
+    Mimics Home Assistant 'bashio' logging format:
+    [18:05:00] INFO: Message
+    """
+    # 1. Get Short Time
     now = datetime.now().strftime("[%H:%M:%S]")
     
-    # Mimic the bashio style (Short time + INFO tag)
-    _original_print(f"{now} INFO:", *args, **kwargs)
+    # 2. Define ANSI Colors (Green for INFO)
+    GREEN = "\033[32m"
+    RESET = "\033[0m"
     
-# Overwrite Python's built-in print with our new version
-builtins.print = timestamped_print
-# ------------------------------------
+    # 3. Print in Bashio format
+    # Force flush=True to ensure logs appear immediately in HA UI
+    _original_print(f"{now} {GREEN}INFO{RESET}:", *args, **kwargs, flush=True)
+
+# Override the built-in print
+builtins.print = bashio_print
+# ---------------------------
 
 import threading
 import time
