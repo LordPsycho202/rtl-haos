@@ -9,7 +9,7 @@ DESCRIPTION:
   - Starts RTL Managers (Radios).
   - Starts System Monitor.
   - UPDATED: Maps Manual Config Serial Numbers to Physical Indices.
-  - UPDATED: Adds space BETWEEN Blue Logo and Purple Subtitle.
+  - UPDATED: Logo Blue, Subtitle Purple, Version Yellow.
 """
 import os
 import sys
@@ -30,6 +30,7 @@ import subprocess
 c_blue   = "\x1b[34m"    # Standard Blue
 c_purple = "\x1b[35m"    # Standard Purple
 c_green  = "\x1b[32m"    # Standard Green
+c_yellow = "\x1b[33m"    # Standard Yellow
 c_reset  = "\x1b[0m"
 
 _original_print = builtins.print
@@ -82,19 +83,39 @@ def get_version():
     return "Unknown"
 
 def show_logo(version):
-    """Prints the ASCII logo (Blue) and Subtitle (Purple) with correct spacing."""
+    """Prints the ASCII logo (Blue) and Subtitle (Purple/Yellow) with correct spacing."""
     logo_lines = [
-        r"    ____  _____  _         _   _    _    ___  ____  ",
-        r"   |  _ \|_   _|| |       | | | |  / \  / _ \/ ___| ",
-        r"   | |_) | | |  | |  ___  | |_| | / _ \| | | \___ \ ",
-        r"   |  _ <  | |  | | |___| |  _  |/ ___ \ |_| |___) |",
-        r"   |_| \_\ |_|  |_____|   |_| |_/_/   \_\___/|____/ "
+        r"   ____  _____  _         _   _    _    ___  ____  ",
+        r"  |  _ \|_   _|| |       | | | |  / \  / _ \/ ___| ",
+        r"  | |_) | | |  | |  ___  | |_| | / _ \| | | \___ \ ",
+        r"  |  _ <  | |  | | |___| |  _  |/ ___ \ |_| |___) |",
+        r"  |_| \_\ |_|  |_____|   |_| |_/_/   \_\___/|____/ "
     ]
+    
+    # 1. Print Logo: Apply Blue to EACH line individually
     for line in logo_lines:
         sys.stdout.write(f"{c_blue}{line}{c_reset}\n")
+    
+    # 2. SPACER (Between Logo and Text)
     sys.stdout.write("\n")
-    sys.stdout.write(f" {c_purple}>>> RTL-SDR Bridge for Home Assistant ({version}) <<<{c_reset}\n")
+    
+    # 3. Print Subtitle: Mix Purple and Yellow
+    # ">>> RTL-SDR Bridge for Home Assistant (" is Purple
+    # "vX.X.X" is Yellow
+    # ") <<<" is Purple
+    sys.stdout.write(
+        f"{c_purple}>>> RTL-SDR Bridge for Home Assistant ({c_reset}"
+        f"{c_yellow}{version}{c_reset}"
+        f"{c_purple}) <<<{c_reset}\n"
+    )
+    
+    # 4. Print Separator
     sys.stdout.write("\n")
+    
+    # 5. Bottom Spacer (before logs start)
+    sys.stdout.write("\n")
+    
+    # 6. Force Flush
     sys.stdout.flush()
 
 def main():
