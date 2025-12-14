@@ -8,25 +8,19 @@ DESCRIPTION:
   - Starts Data Processor (Throttling).
   - Starts RTL Managers (Radios).
   - Starts System Monitor.
-  - UPDATED: Added ASCII Startup Logo with a 3-second pause.
+  - UPDATED: Imports new multi-device discovery function.
 """
 import builtins
 from datetime import datetime
 
 # --- 1. GLOBAL TIMESTAMP OVERRIDE ---
-# Save the original print function so we don't cause an infinite recursion
-# AND so we can print the logo without timestamps.
 _original_print = builtins.print
 
 def timestamped_print(*args, **kwargs):
     """Adds a timestamp to every print() call."""
-    # Format: [18:05:00] INFO:
     now = datetime.now().strftime("[%H:%M:%S]")
-    
-    # Mimic the bashio style (Short time + INFO tag)
     _original_print(f"{now} INFO:", *args, **kwargs)
     
-# Overwrite Python's built-in print with our new version
 builtins.print = timestamped_print
 # ------------------------------------
 
@@ -40,15 +34,12 @@ import socket
 
 # --- PRE-FLIGHT DEPENDENCY CHECK ---
 def check_dependencies():
-    # 1. Check for the rtl_433 binary (System Dependency)
     if not subprocess.run(["which", "rtl_433"], capture_output=True).stdout:
-        print("CRITICAL: 'rtl_433' binary not found. Please install it (e.g., sudo apt install rtl-433).")
+        print("CRITICAL: 'rtl_433' binary not found. Please install it.")
         sys.exit(1)
 
-    # 2. Check for Paho MQTT (Python Dependency)
     if importlib.util.find_spec("paho") is None:
         print("CRITICAL: Python dependency 'paho-mqtt' not found.")
-        print("Please install requirements: uv sync")
         sys.exit(1)
 
 check_dependencies()
@@ -60,7 +51,8 @@ from system_monitor import system_stats_loop
 
 # New Imports from Split Files
 from data_processor import DataProcessor
-from rtl_manager import rtl_loop, discover_default_rtl_serial
+# UPDATED IMPORT HERE:
+from rtl_manager import rtl_loop, discover_rtl_devices
 
 def get_version():
     """Retrieves the version string from config.yaml."""
@@ -85,24 +77,20 @@ def show_logo(version):
  |  _ <  | |  | | |___| |  _  |/ ___ \ |_| |___) |
  |_| \_\ |_|  |_____|   |_| |_/_/   \_\___/|____/ 
     """
-    _original_print("\033[1;36m" + logo + "\033[0m") # Cyan Color
+    _original_print("\033[1;36m" + logo + "\033[0m") 
     _original_print(f"   \033[1;37m>>> RTL-SDR Bridge for Home Assistant ({version}) <<<\033[0m")
     _original_print("   --------------------------------------------------\n")
 
 def main():
     ver = get_version()
-    
-    # 1. SHOW LOGO (Clean, no timestamps)
     show_logo(ver)
-    
-    # PAUSE FOR EFFECT (3 Seconds)
     time.sleep(3)
 
-    # 2. START MQTT (With Version Info)
+    # 2. START MQTT
     mqtt_handler = HomeNodeMQTT(version=ver)
     mqtt_handler.start()
 
-    # 3. START DATA PROCESSOR (Handles Buffering/Throttling)
+    # 3. START DATA PROCESSOR
     processor = DataProcessor(mqtt_handler)
     threading.Thread(target=processor.start_throttle_loop, daemon=True).start()
 
@@ -125,8 +113,7 @@ def main():
             ).start()
     else:
         # AUTO MODE: Detect ALL radios & Apply Defaults
-        # UPDATED: Now uses the new discover_rtl_devices function
-        detected_radios = discover_rtl_devices() # <--- Changed function call
+        detected_radios = discover_rtl_devices()
         
         if detected_radios:
             print(f"[STARTUP] Auto-detected {len(detected_radios)} radios.")
