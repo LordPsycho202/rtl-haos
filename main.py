@@ -9,6 +9,7 @@ DESCRIPTION:
   - Starts RTL Managers (Radios).
   - Starts System Monitor.
   - UPDATED: Imports new multi-device discovery function.
+  - UPDATED: Added 5s Stagger Delay to prevent USB Race Conditions.
 """
 import builtins
 from datetime import datetime
@@ -51,7 +52,6 @@ from system_monitor import system_stats_loop
 
 # New Imports from Split Files
 from data_processor import DataProcessor
-# UPDATED IMPORT HERE:
 from rtl_manager import rtl_loop, discover_rtl_devices
 
 def get_version():
@@ -111,6 +111,8 @@ def main():
                 args=(radio, mqtt_handler, processor, sys_id, sys_model),
                 daemon=True,
             ).start()
+            print("[STARTUP] Staggering next radio start by 5 seconds...")
+            time.sleep(5)
     else:
         # AUTO MODE: Detect ALL radios & Apply Defaults
         detected_radios = discover_rtl_devices()
@@ -131,6 +133,10 @@ def main():
                     args=(radio_setup, mqtt_handler, processor, sys_id, sys_model),
                     daemon=True,
                 ).start()
+                
+                # STAGGER DELAY: Prevents USB Race Conditions
+                print(f"[STARTUP] Initializing {dr['name']}... waiting 5s before next.")
+                time.sleep(5) 
         else:
             # FALLBACK: No devices found via EEPROM, try blindly forcing ID 0
             print("[STARTUP] No serials detected. Defaulting to generic device '0'.")
