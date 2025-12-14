@@ -8,29 +8,47 @@ DESCRIPTION:
   - Starts Data Processor (Throttling).
   - Starts RTL Managers (Radios).
   - Starts System Monitor.
-  - UPDATED: Now maps Manual Config Serial Numbers to Physical Indices to prevent driver crashes.
+  - UPDATED: Maps Manual Config Serial Numbers to Physical Indices.
+  - UPDATED: Forces ANSI Color output for HAOS Logs.
 """
 import builtins
 from datetime import datetime
-
-# --- 1. GLOBAL TIMESTAMP OVERRIDE ---
-_original_print = builtins.print
-
-def timestamped_print(*args, **kwargs):
-    """Adds a timestamp to every print() call."""
-    now = datetime.now().strftime("[%H:%M:%S]")
-    _original_print(f"{now} INFO:", *args, **kwargs)
-    
-builtins.print = timestamped_print
-# ------------------------------------
-
+import sys
 import threading
 import time
-import sys
 import importlib.util
 import subprocess
 import os
-import socket
+
+# --- 1. GLOBAL LOGGING & COLOR SETUP ---
+# Standard ANSI Colors for HAOS
+c_cyan = "\033[36m"
+c_green = "\033[32m"
+c_yellow = "\033[33m"
+c_reset = "\033[0m"
+
+_original_print = builtins.print
+
+def timestamped_print(*args, **kwargs):
+    """
+    Replica of HAOS Logging format:
+    [HH:MM:SS] INFO: <Message>
+    We color 'INFO:' green to match the supervisor style.
+    """
+    now = datetime.now().strftime("%H:%M:%S")
+    
+    # Construct the prefix with color
+    prefix = f"[{now}] {c_green}INFO:{c_reset}"
+    
+    # Convert all args to string to avoid format errors
+    msg = " ".join(map(str, args))
+    
+    # Use original print, flushing immediately
+    _original_print(f"{prefix} {msg}", flush=True, **kwargs)
+
+# Override the built-in print
+builtins.print = timestamped_print
+# ------------------------------------
 
 # --- PRE-FLIGHT DEPENDENCY CHECK ---
 def check_dependencies():
@@ -68,12 +86,7 @@ def get_version():
     return "Unknown"
 
 def show_logo(version):
-    """Prints the ASCII logo with forced ANSI colors."""
-    # Force ANSI codes using hex \x1b
-    CYAN = "\x1b[1;36m"
-    WHITE = "\x1b[1;37m"
-    RESET = "\x1b[0m"
-
+    """Prints the ASCII logo forced to Cyan using sys.stdout to bypass filters."""
     logo = r"""
   ____  _____  _         _   _    _    ___  ____  
  |  _ \|_   _|| |       | | | |  / \  / _ \/ ___| 
@@ -82,10 +95,16 @@ def show_logo(version):
  |_| \_\ |_|  |_____|   |_| |_/_/   \_\___/|____/ 
     """
     
-    # Use flush=True to ensure it hits the Docker logs instantly
-    _original_print(f"{CYAN}{logo}{RESET}", flush=True) 
-    _original_print(f"   {WHITE}>>> RTL-SDR Bridge for Home Assistant ({version}) <<<{RESET}", flush=True)
-    _original_print("   --------------------------------------------------\n", flush=True)
+    # We construct the whole block with color codes
+    banner = (
+        f"{c_cyan}{logo}{c_reset}\n"
+        f"   {c_cyan}>>> RTL-SDR Bridge for Home Assistant ({version}) <<<{c_reset}\n"
+        f"   --------------------------------------------------\n"
+    )
+    
+    # Write directly to stdout buffer to ensure color isn't stripped by 'print'
+    sys.stdout.write(banner)
+    sys.stdout.flush()
 
 def main():
     ver = get_version()
@@ -106,7 +125,6 @@ def main():
     sys_name = f"{sys_model} ({sys_id})"
 
     # --- NEW: HARDWARE MAPPING ---
-    # Always scan first to find where the serials actually live (Index 0 vs Index 1)
     print("[STARTUP] Scanning USB bus for RTL-SDR devices...")
     detected_devices = discover_rtl_devices()
     
@@ -152,13 +170,11 @@ def main():
     else:
         # --- AUTO MODE (Simple) ---
         if detected_devices:
-            # Pick ONLY the first detected device (Single Device Mode)
             target_radio = detected_devices[0]
             
             print(f"[STARTUP] Auto-detected {len(detected_devices)} radios.")
             print(f"[STARTUP] Unconfigured Mode: Selecting first device only ({target_radio['name']}).")
             
-            # Merge defaults
             radio_setup = {
                 "freq": config.RTL_DEFAULT_FREQ,
                 "hop_interval": config.RTL_DEFAULT_HOP_INTERVAL,
