@@ -342,7 +342,7 @@ def rtl_loop(radio_config: dict, mqtt_handler, data_processor, sys_id: str, sys_
             )
 
         # --- NEW: Restart Logic ---
-        if proc and proc.returncode == -15:
+        if proc and (proc.returncode == -15 or proc.returncode == 0):
             print(f"[{radio_name}] Fast restart triggered.")
             mqtt_handler.send_sensor(
                 sys_id, 
