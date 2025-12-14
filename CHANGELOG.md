@@ -1,5 +1,7 @@
 # Changelog
 ## v1.0.35
+  **NEW:** Added button to reset radios
+  **NEW:** Improved management of multiple radios
 - **NEW:** Hop mode works with rtl-sdr autodetect (no id)
 - **NEW:** Add-on icon
 ## v1.0.34
