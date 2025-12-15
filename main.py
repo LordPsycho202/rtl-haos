@@ -8,7 +8,7 @@ DESCRIPTION:
   - Starts Data Processor (Throttling).
   - Starts RTL Managers (Radios).
   - Starts System Monitor.
-  - UPDATED: Switched Radio Source IDs to BOLD CYAN for maximum visibility.
+  - UPDATED: Unified TX and Radio Data to BOLD CYAN for consistent "Data Traffic" look.
 """
 import os
 import sys
@@ -28,9 +28,8 @@ import subprocess
 # --- 1. GLOBAL LOGGING & COLOR SETUP ---
 # Standard ANSI with Bold (1;) to force "Bright" colors on HAOS.
 
-c_cyan    = "\033[1;36m"   # Bold Cyan (Radio IDs / Data - Brightest)
-c_blue    = "\033[1;34m"   # Bold Blue (DEBUG / Infrastructure)
-c_magenta = "\033[1;35m"   # Bold Magenta (TX Header)
+c_cyan    = "\033[1;36m"   # Bold Cyan (DATA: TX, Radio IDs, Values)
+c_blue    = "\033[1;34m"   # Bold Blue (SYSTEM: DEBUG, RTL, MQTT)
 c_green   = "\033[1;32m"   # Bold Green (INFO / Startup)
 c_yellow  = "\033[1;33m"   # Bold Yellow (WARN)
 c_red     = "\033[1;31m"   # Bold Red (ERROR)
@@ -45,18 +44,18 @@ def get_source_color(tag_text):
     """
     clean = tag_text.lower().replace("[", "").replace("]", "")
     
-    # Infrastructure -> Blue (Matches DEBUG/System tone)
+    # Infrastructure -> Blue (System/Debug Layer)
     if "mqtt" in clean: return c_blue
     if "rtl" in clean: return c_blue
     if "startup" in clean: return c_green
     if "nuke" in clean: return c_red
     
-    # Radio Data / IDs -> Cyan (Brightest Pop)
+    # Radio Data / IDs / TX Sources -> Cyan (Data Layer)
     return c_cyan
 
 def timestamped_print(*args, **kwargs):
     """
-    Smart Logging v11 (High Contrast Cyan):
+    Smart Logging v12 (Unified Data Color):
     """
     now = datetime.now().strftime("%H:%M:%S")
     time_prefix = f"{c_white}[{now}]{c_reset}"
@@ -82,9 +81,9 @@ def timestamped_print(*args, **kwargs):
         header = f"{c_blue}DEBUG:{c_reset}"
         msg = msg.replace("[DEBUG]", "").replace("[debug]", "").strip()
 
-    # D. TX (Magenta Header)
+    # D. TX (Cyan) - Now matches Radio Data!
     elif "-> tx" in lower_msg:
-        header = f"{c_magenta}TX:   {c_reset}"
+        header = f"{c_cyan}TX:   {c_reset}"
         msg = msg.replace("-> TX", "").strip()
         
         # Parse specialized TX format: "rtl-bridge... [source]: value"
@@ -93,7 +92,7 @@ def timestamped_print(*args, **kwargs):
             src_tag = match.group(1)
             val = match.group(2)
             
-            # Color the source
+            # Color the source (Cyan)
             s_color = get_source_color(src_tag)
             msg = f"{s_color}{src_tag}{c_reset} {val}"
 
