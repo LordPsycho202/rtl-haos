@@ -8,7 +8,7 @@ DESCRIPTION:
   - Starts Data Processor (Throttling).
   - Starts RTL Managers (Radios).
   - Starts System Monitor.
-  - UPDATED: "Cool & Calm" Palette. Cyan Timestamps, Green System Tags, Magenta Data.
+  - UPDATED: Switched Radio Source IDs to BOLD CYAN for maximum visibility.
 """
 import os
 import sys
@@ -26,13 +26,15 @@ import importlib.util
 import subprocess
 
 # --- 1. GLOBAL LOGGING & COLOR SETUP ---
-# Standard ANSI Codes (Safe for HAOS)
-c_cyan    = "\033[36m"   # Cyan (Timestamp - Calm & Readable)
-c_magenta = "\033[35m"   # Magenta (Radio Data / TX)
-c_green   = "\033[32m"   # Green (System Sources / INFO - "All Good")
-c_blue    = "\033[34m"   # Blue (DEBUG)
-c_yellow  = "\033[33m"   # Yellow (WARN)
-c_red     = "\033[31m"   # Red (ERROR)
+# Standard ANSI with Bold (1;) to force "Bright" colors on HAOS.
+
+c_cyan    = "\033[1;36m"   # Bold Cyan (Radio IDs / Data - Brightest)
+c_blue    = "\033[1;34m"   # Bold Blue (DEBUG / Infrastructure)
+c_magenta = "\033[1;35m"   # Bold Magenta (TX Header)
+c_green   = "\033[1;32m"   # Bold Green (INFO / Startup)
+c_yellow  = "\033[1;33m"   # Bold Yellow (WARN)
+c_red     = "\033[1;31m"   # Bold Red (ERROR)
+c_white   = "\033[37m"     # Standard White (Timestamp - Dim)
 c_reset   = "\033[0m"
 
 _original_print = builtins.print
@@ -43,25 +45,21 @@ def get_source_color(tag_text):
     """
     clean = tag_text.lower().replace("[", "").replace("]", "")
     
-    # Infrastructure -> Green (Implies "System Healthy")
-    if "mqtt" in clean: return c_green
-    if "rtl" in clean: return c_green
+    # Infrastructure -> Blue (Matches DEBUG/System tone)
+    if "mqtt" in clean: return c_blue
+    if "rtl" in clean: return c_blue
     if "startup" in clean: return c_green
-    if "throttle" in clean: return c_green
-    
-    # Destructive -> Red
     if "nuke" in clean: return c_red
     
-    # Radio Data / IDs -> Magenta (Distinct Data Layer)
-    return c_magenta
+    # Radio Data / IDs -> Cyan (Brightest Pop)
+    return c_cyan
 
 def timestamped_print(*args, **kwargs):
     """
-    Smart Logging v10 (Cool Palette):
+    Smart Logging v11 (High Contrast Cyan):
     """
     now = datetime.now().strftime("%H:%M:%S")
-    # Timestamp is now Cyan (Readable, not alarming, not boring white)
-    time_prefix = f"{c_cyan}[{now}]{c_reset}"
+    time_prefix = f"{c_white}[{now}]{c_reset}"
     
     msg = " ".join(map(str, args))
     lower_msg = msg.lower()
@@ -84,7 +82,7 @@ def timestamped_print(*args, **kwargs):
         header = f"{c_blue}DEBUG:{c_reset}"
         msg = msg.replace("[DEBUG]", "").replace("[debug]", "").strip()
 
-    # D. TX (Magenta) - Matches Radio Data
+    # D. TX (Magenta Header)
     elif "-> tx" in lower_msg:
         header = f"{c_magenta}TX:   {c_reset}"
         msg = msg.replace("-> TX", "").strip()
