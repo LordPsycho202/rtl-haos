@@ -8,7 +8,7 @@ DESCRIPTION:
   - Starts Data Processor (Throttling).
   - Starts RTL Managers (Radios).
   - Starts System Monitor.
-  - UPDATED: "Cool Spectrum" Palette. Green Header -> Cyan Source -> Blue Data.
+  - UPDATED: Automatically strips "RX:" text for cleaner logs.
 """
 import os
 import sys
@@ -29,11 +29,12 @@ import subprocess
 # Standard ANSI with Bold (1;) to force "Bright" colors on HAOS.
 
 c_cyan    = "\033[1;36m"   # Bold Cyan (Source IDs - Brightest Pop)
-c_blue    = "\033[1;34m"   # Bold Blue (Data Values / DEBUG)
-c_green   = "\033[1;32m"   # Bold Green (TX Header / INFO)
+c_blue    = "\033[1;34m"   # Bold Blue (DEBUG / Infrastructure)
+c_green   = "\033[1;32m"   # Bold Green (TX Header / INFO / Startup)
 c_yellow  = "\033[1;33m"   # Bold Yellow (WARN Only)
 c_red     = "\033[1;31m"   # Bold Red (ERROR)
-c_white   = "\033[37m"     # Standard White (Timestamp)
+c_white   = "\033[1;37m"   # Bold White (TX Values / Contrast)
+c_dim     = "\033[37m"     # Standard White (Timestamp - Dim)
 c_reset   = "\033[0m"
 
 _original_print = builtins.print
@@ -55,17 +56,20 @@ def get_source_color(tag_text):
 
 def timestamped_print(*args, **kwargs):
     """
-    Smart Logging v15 (Cool Spectrum):
-    TX Row Scheme: Green Header -> Cyan Source -> Blue Value
+    Smart Logging v19 (Clean RX):
+    1. Determine Header.
+    2. Check for Special TX formatting.
+    3. Universal Source Coloring + Strip "RX:" text.
     """
     now = datetime.now().strftime("%H:%M:%S")
-    time_prefix = f"{c_white}[{now}]{c_reset}"
+    time_prefix = f"{c_dim}[{now}]{c_reset}"
     
     msg = " ".join(map(str, args))
     lower_msg = msg.lower()
     
     # --- 1. DETERMINE HEADER LEVEL ---
     header = f"{c_green}INFO: {c_reset}" # Default
+    special_formatting_applied = False
     
     # A. ERROR (Red)
     if any(x in lower_msg for x in ["error", "critical", "failed", "crashed"]):
@@ -80,9 +84,10 @@ def timestamped_print(*args, **kwargs):
     # C. DEBUG (Blue)
     elif "debug" in lower_msg:
         header = f"{c_blue}DEBUG:{c_reset}"
+        # Clean the tag, let Universal Parser handle the rest
         msg = msg.replace("[DEBUG]", "").replace("[debug]", "").strip()
 
-    # D. TX (Green -> Cyan -> Blue)
+    # D. TX (Green -> Cyan -> White)
     elif "-> tx" in lower_msg:
         header = f"{c_green}TX:   {c_reset}"
         msg = msg.replace("-> TX", "").strip()
@@ -93,20 +98,24 @@ def timestamped_print(*args, **kwargs):
             src_tag = match.group(1) # e.g. [radio_status_101]
             val = match.group(2)     # e.g. Last: 12:00:00
             
-            # Apply Cool Spectrum Scheme
-            # Source = Cyan (High visibility)
-            # Value  = Blue (Data)
-            msg = f"{c_cyan}{src_tag}{c_reset} {c_blue}{val}{c_reset}"
+            # Apply Special TX Scheme
+            msg = f"{c_cyan}{src_tag}{c_reset} {c_white}{val}{c_reset}"
+            special_formatting_applied = True
 
-    # --- 2. UNIVERSAL SOURCE DETECTION (Fallthrough for RX/System) ---
-    else:
-        # Catches anything starting with brackets: [MQTT], [RTL], [915]
+    # --- 2. UNIVERSAL SOURCE DETECTION ---
+    # Runs on EVERYTHING (DEBUG, INFO, WARN) unless specialized TX logic ran.
+    if not special_formatting_applied:
+        # Catches anything starting with brackets: [Hopping_Radio], [433]
         match = re.match(r"^(\[.*?\])\s*(.*)", msg)
         if match:
             source_tag = match.group(1)
             rest_of_msg = match.group(2)
             
-            # Color based on origin (RX defaults to Cyan)
+            # CLEANUP: Remove "RX:" if present
+            # This turns "[Source] RX: {data}" into "[Source] {data}"
+            rest_of_msg = rest_of_msg.replace("RX:", "").strip()
+            
+            # Color based on origin
             s_color = get_source_color(source_tag)
             msg = f"{s_color}{source_tag}{c_reset} {rest_of_msg}"
 
