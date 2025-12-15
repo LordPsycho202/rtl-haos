@@ -8,7 +8,7 @@ DESCRIPTION:
   - Starts Data Processor (Throttling).
   - Starts RTL Managers (Radios).
   - Starts System Monitor.
-  - UPDATED: Switched to High-Intensity (90-series) ANSI codes for HAOS Web Viewer.
+  - UPDATED: Fixed Colors by using BOLD ANSI (1;3x) instead of unsupported High-Intensity (9x).
 """
 import os
 import sys
@@ -25,15 +25,17 @@ import time
 import importlib.util
 import subprocess
 
-# --- 1. GLOBAL LOGGING & COLOR SETUP (High Intensity) ---
-# We use the 90-97 range ("Bright") to force distinct colors in HAOS Web UI.
-c_cyan    = "\x1b[96m"   # Bright Cyan (TX) - Distinct Neon Blue
-c_blue    = "\x1b[94m"   # Bright Blue (DEBUG) - Lighter, readable Blue
-c_purple  = "\x1b[95m"   # Bright Magenta (Sources) - Bright Pink/Purple
-c_green   = "\x1b[92m"   # Bright Green (INFO)
-c_yellow  = "\x1b[93m"   # Bright Yellow (WARN)
-c_red     = "\x1b[91m"   # Bright Red (ERROR)
-c_white   = "\x1b[97m"   # Bright White (Timestamp)
+# --- 1. GLOBAL LOGGING & COLOR SETUP ---
+# We use "1;3x" (Bold/Bright) for Headers to make them pop.
+# We use "37" (Standard) for Timestamp so it stays dim/gray.
+
+c_cyan    = "\x1b[1;36m"   # Bold Cyan (TX / MQTT)
+c_blue    = "\x1b[1;34m"   # Bold Blue (DEBUG / RTL)
+c_purple  = "\x1b[1;35m"   # Bold Purple (Radios / Throttle)
+c_green   = "\x1b[1;32m"   # Bold Green (INFO / Startup)
+c_yellow  = "\x1b[1;33m"   # Bold Yellow (WARN)
+c_red     = "\x1b[1;31m"   # Bold Red (ERROR / Nuke)
+c_white   = "\x1b[37m"     # Standard White (Timestamp - Dimmer)
 c_reset   = "\x1b[0m"
 
 _original_print = builtins.print
@@ -58,7 +60,10 @@ def get_source_color(tag_text):
 
 def timestamped_print(*args, **kwargs):
     """
-    Smart Logging v4 (High-Intensity Colors):
+    Smart Logging v5 (Bold Colors Fix):
+    1. Detect Header Level (INFO, WARN, ERROR).
+    2. Detect [Source] tag.
+    3. Apply specific color to [Source] based on origin.
     """
     now = datetime.now().strftime("%H:%M:%S")
     time_prefix = f"{c_white}[{now}]{c_reset}"
