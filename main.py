@@ -8,7 +8,7 @@ DESCRIPTION:
   - Starts Data Processor (Throttling).
   - Starts RTL Managers (Radios).
   - Starts System Monitor.
-  - UPDATED: Unified TX and Radio Data to BOLD CYAN for consistent "Data Traffic" look.
+  - UPDATED: TX Row Palette -> Green Header, Yellow Source, Blue Data.
 """
 import os
 import sys
@@ -28,12 +28,12 @@ import subprocess
 # --- 1. GLOBAL LOGGING & COLOR SETUP ---
 # Standard ANSI with Bold (1;) to force "Bright" colors on HAOS.
 
-c_cyan    = "\033[1;36m"   # Bold Cyan (DATA: TX, Radio IDs, Values)
-c_blue    = "\033[1;34m"   # Bold Blue (SYSTEM: DEBUG, RTL, MQTT)
-c_green   = "\033[1;32m"   # Bold Green (INFO / Startup)
-c_yellow  = "\033[1;33m"   # Bold Yellow (WARN)
+c_cyan    = "\033[1;36m"   # Bold Cyan (General Data / RX)
+c_blue    = "\033[1;34m"   # Bold Blue (TX Data / System / DEBUG)
+c_green   = "\033[1;32m"   # Bold Green (TX Header / INFO / Startup)
+c_yellow  = "\033[1;33m"   # Bold Yellow (TX Source / WARN)
 c_red     = "\033[1;31m"   # Bold Red (ERROR)
-c_white   = "\033[37m"     # Standard White (Timestamp - Dim)
+c_white   = "\033[37m"     # Standard White (Timestamp)
 c_reset   = "\033[0m"
 
 _original_print = builtins.print
@@ -44,18 +44,19 @@ def get_source_color(tag_text):
     """
     clean = tag_text.lower().replace("[", "").replace("]", "")
     
-    # Infrastructure -> Blue (System/Debug Layer)
+    # Infrastructure -> Blue
     if "mqtt" in clean: return c_blue
     if "rtl" in clean: return c_blue
     if "startup" in clean: return c_green
     if "nuke" in clean: return c_red
     
-    # Radio Data / IDs / TX Sources -> Cyan (Data Layer)
+    # Default Radio Data (RX) -> Cyan (Keeps RX distinct from the new TX style)
     return c_cyan
 
 def timestamped_print(*args, **kwargs):
     """
-    Smart Logging v12 (Unified Data Color):
+    Smart Logging v13 (Tri-Color TX):
+    TX Row Scheme: Green Header -> Yellow Source -> Blue Value
     """
     now = datetime.now().strftime("%H:%M:%S")
     time_prefix = f"{c_white}[{now}]{c_reset}"
@@ -81,31 +82,33 @@ def timestamped_print(*args, **kwargs):
         header = f"{c_blue}DEBUG:{c_reset}"
         msg = msg.replace("[DEBUG]", "").replace("[debug]", "").strip()
 
-    # D. TX (Cyan) - Now matches Radio Data!
+    # D. TX (Green -> Yellow -> Blue)
     elif "-> tx" in lower_msg:
-        header = f"{c_cyan}TX:   {c_reset}"
+        header = f"{c_green}TX:   {c_reset}"
         msg = msg.replace("-> TX", "").strip()
         
         # Parse specialized TX format: "rtl-bridge... [source]: value"
         match = re.match(r".*?(\[.*?\]):\s+(.*)", msg)
         if match:
-            src_tag = match.group(1)
-            val = match.group(2)
+            src_tag = match.group(1) # e.g. [radio_status_101]
+            val = match.group(2)     # e.g. Last: 12:00:00
             
-            # Color the source (Cyan)
-            s_color = get_source_color(src_tag)
-            msg = f"{s_color}{src_tag}{c_reset} {val}"
+            # Apply the requested Tri-Color Scheme
+            # Source = Yellow
+            # Value  = Blue
+            msg = f"{c_yellow}{src_tag}{c_reset} {c_blue}{val}{c_reset}"
 
-    # --- 2. UNIVERSAL SOURCE DETECTION ---
-    # Catches anything starting with brackets: [MQTT], [RTL], [915]
-    match = re.match(r"^(\[.*?\])\s*(.*)", msg)
-    if match:
-        source_tag = match.group(1)
-        rest_of_msg = match.group(2)
-        
-        # Color based on origin
-        s_color = get_source_color(source_tag)
-        msg = f"{s_color}{source_tag}{c_reset} {rest_of_msg}"
+    # --- 2. UNIVERSAL SOURCE DETECTION (Fallthrough for RX/System) ---
+    else:
+        # Catches anything starting with brackets: [MQTT], [RTL], [915]
+        match = re.match(r"^(\[.*?\])\s*(.*)", msg)
+        if match:
+            source_tag = match.group(1)
+            rest_of_msg = match.group(2)
+            
+            # Color based on origin (RX defaults to Cyan to distinguish from TX)
+            s_color = get_source_color(source_tag)
+            msg = f"{s_color}{source_tag}{c_reset} {rest_of_msg}"
 
     # Print Final
     _original_print(f"{time_prefix} {header} {msg}", flush=True, **kwargs)
