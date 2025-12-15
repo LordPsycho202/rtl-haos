@@ -8,7 +8,7 @@ DESCRIPTION:
   - Starts Data Processor (Throttling).
   - Starts RTL Managers (Radios).
   - Starts System Monitor.
-  - UPDATED: Automatically strips "RX:" text for cleaner logs.
+  - UPDATED: Renamed "TX" header to "DATA" for clarity.
 """
 import os
 import sys
@@ -30,10 +30,10 @@ import subprocess
 
 c_cyan    = "\033[1;36m"   # Bold Cyan (Source IDs - Brightest Pop)
 c_blue    = "\033[1;34m"   # Bold Blue (DEBUG / Infrastructure)
-c_green   = "\033[1;32m"   # Bold Green (TX Header / INFO / Startup)
+c_green   = "\033[1;32m"   # Bold Green (DATA Header / INFO / Startup)
 c_yellow  = "\033[1;33m"   # Bold Yellow (WARN Only)
 c_red     = "\033[1;31m"   # Bold Red (ERROR)
-c_white   = "\033[1;37m"   # Bold White (TX Values / Contrast)
+c_white   = "\033[1;37m"   # Bold White (DATA Values / Contrast)
 c_dim     = "\033[37m"     # Standard White (Timestamp - Dim)
 c_reset   = "\033[0m"
 
@@ -56,10 +56,10 @@ def get_source_color(tag_text):
 
 def timestamped_print(*args, **kwargs):
     """
-    Smart Logging v19 (Clean RX):
-    1. Determine Header.
-    2. Check for Special TX formatting.
-    3. Universal Source Coloring + Strip "RX:" text.
+    Smart Logging v20 (DATA Header):
+    1. Determine Header (INFO, WARN, DATA, DEBUG).
+    2. Check for Special DATA formatting.
+    3. Universal Source Coloring.
     """
     now = datetime.now().strftime("%H:%M:%S")
     time_prefix = f"{c_dim}[{now}]{c_reset}"
@@ -87,32 +87,30 @@ def timestamped_print(*args, **kwargs):
         # Clean the tag, let Universal Parser handle the rest
         msg = msg.replace("[DEBUG]", "").replace("[debug]", "").strip()
 
-    # D. TX (Green -> Cyan -> White)
+    # D. DATA (Formerly TX) - Green -> Cyan -> White
     elif "-> tx" in lower_msg:
-        header = f"{c_green}TX:   {c_reset}"
+        # Changed label from "TX:" to "DATA:"
+        header = f"{c_green}DATA: {c_reset}"
         msg = msg.replace("-> TX", "").strip()
         
-        # Parse specialized TX format: "rtl-bridge... [source]: value"
+        # Parse specialized format: "rtl-bridge... [source]: value"
         match = re.match(r".*?(\[.*?\]):\s+(.*)", msg)
         if match:
             src_tag = match.group(1) # e.g. [radio_status_101]
             val = match.group(2)     # e.g. Last: 12:00:00
             
-            # Apply Special TX Scheme
+            # Apply Special DATA Scheme
             msg = f"{c_cyan}{src_tag}{c_reset} {c_white}{val}{c_reset}"
             special_formatting_applied = True
 
     # --- 2. UNIVERSAL SOURCE DETECTION ---
-    # Runs on EVERYTHING (DEBUG, INFO, WARN) unless specialized TX logic ran.
     if not special_formatting_applied:
-        # Catches anything starting with brackets: [Hopping_Radio], [433]
         match = re.match(r"^(\[.*?\])\s*(.*)", msg)
         if match:
             source_tag = match.group(1)
             rest_of_msg = match.group(2)
             
             # CLEANUP: Remove "RX:" if present
-            # This turns "[Source] RX: {data}" into "[Source] {data}"
             rest_of_msg = rest_of_msg.replace("RX:", "").strip()
             
             # Color based on origin
