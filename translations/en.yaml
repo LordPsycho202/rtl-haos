@@ -66,7 +66,7 @@ configuration:
       Seconds to buffer readings before publishing. Set to 0 for real-time
       updates, or higher (e.g., 30) to average readings and reduce database size.
   debug_raw_json:
-    name: Debug Mode
+    name: JSON output Enable
     description: Print raw rtl_433 JSON output to the log.
   device_blacklist:
     name: Device Blacklist
