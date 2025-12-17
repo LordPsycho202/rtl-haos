@@ -27,6 +27,8 @@ configuration:
     description: >-
       If enabled, the Radio Status sensor will show "Last: HH:MM:SS" (updating every 5s).
       If disabled, it will show a static "Online" status (cleaner log).
+      WARNING: Enabling this may increase log size significantly over time.
+
 
   # --- UPDATED TO MATCH CAPITALIZED KEYS ---
   rtl_config:
