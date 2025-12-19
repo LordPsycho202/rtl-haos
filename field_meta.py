@@ -75,6 +75,10 @@ FIELD_META = {
     "battery_mV":           ("mV", "voltage", "mdi:gauge", "Battery Voltage","sensor"),
     "battery_ok":           ("","battery","","Battery","binary_sensor"),
 
+    # --- Soil Moisture ---
+    "moisture":            ("%", "moisture", "mdi:water-percent", "Soil Moisture"),
+    
+
     # --- Radio Diagnostics ---
     "freq":                 ("MHz", "frequency", "mdi:sine-wave", "Frequency","sensor"),
     "freq1":                ("MHz", "frequency", "mdi:sine-wave", "Frequency","sensor"),
