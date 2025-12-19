@@ -210,17 +210,17 @@ class HomeNodeMQTT:
             if unique_id in self.discovery_published:
                 return
 
-            default_meta = (None, "none", "mdi:eye", sensor_name.replace("_", " ").title())
+            default_meta = (None, "none", "mdi:eye", sensor_name.replace("_", " ").title(),"sensor")
             
             if sensor_name.startswith("radio_status"):
                 base_meta = FIELD_META.get("radio_status", default_meta)
-                unit, device_class, icon, default_fname = base_meta
+                unit, device_class, icon, default_fname,sensor_type = base_meta
             else:
                 meta = FIELD_META.get(sensor_name, default_meta)
                 try:
-                    unit, device_class, icon, default_fname = meta
+                    unit, device_class, icon, default_fname,sensor_type = meta
                 except ValueError:
-                    unit, device_class, icon, default_fname = default_meta
+                    unit, device_class, icon, default_fname,sensor_type = default_meta
 
             if friendly_name_override:
                 friendly_name = friendly_name_override
@@ -263,7 +263,7 @@ class HomeNodeMQTT:
 
             if device_class in ["gas", "energy", "water", "monetary", "precipitation"]:
                 payload["state_class"] = "total_increasing"
-            if device_class in ["temperature", "humidity", "pressure", "illuminance", "voltage","wind_speed","moisture"]:
+            if device_class in ["temperature", "humidity", "pressure", "illuminance", "voltage","wind_speed","moisture","battery"]:
                 payload["state_class"] = "measurement"
             if device_class in ["wind_direction"]:
                 payload["state_class"] = "measurement_angle"
@@ -273,7 +273,7 @@ class HomeNodeMQTT:
             
             payload["availability_topic"] = self.TOPIC_AVAILABILITY
 
-            config_topic = f"homeassistant/sensor/{unique_id}/config"
+            config_topic = f"homeassistant/{sensor_type}/{unique_id}/config"
             self.client.publish(config_topic, json.dumps(payload), retain=True)
             self.discovery_published.add(unique_id)
 
