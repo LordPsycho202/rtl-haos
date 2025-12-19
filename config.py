@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     skip_keys: list[str] = Field(default_factory=lambda: ["time", "protocol", "mod", "id"])
     device_blacklist: list[str] = Field(default_factory=lambda: ["SimpliSafe*", "EezTire*"])
     device_whitelist: list[str] = Field(default_factory=list)
+    last_value_sensors: list[str] = Field(default_factory=lambda: ["battery_ok"])
 
     main_sensors: list[str] = Field(
         default_factory=lambda: [
@@ -89,6 +90,7 @@ SKIP_KEYS = settings.skip_keys
 DEVICE_BLACKLIST = settings.device_blacklist
 DEVICE_WHITELIST = settings.device_whitelist
 MAIN_SENSORS = settings.main_sensors
+LAST_VALUE = settings.last_value_sensors
 RTL_EXPIRE_AFTER = settings.rtl_expire_after
 FORCE_NEW_IDS = settings.force_new_ids
 ID_SUFFIX = settings.id_suffix

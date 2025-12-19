@@ -76,7 +76,7 @@ FIELD_META = {
     "battery_ok":           ("","battery","","Battery","binary_sensor"),
 
     # --- Soil Moisture ---
-    "moisture":            ("%", "moisture", "mdi:water-percent", "Soil Moisture"),
+    "moisture":            ("%", "moisture", "mdi:water-percent", "Soil Moisture", "sensor"),
     
 
     # --- Radio Diagnostics ---

@@ -81,7 +81,7 @@ class DataProcessor:
                     # Calculate Average (or last known value for strings)
                     final_val = None
                     try:
-                        if isinstance(values[0], (int, float) and field != "battery_ok"):
+                        if isinstance(values[0], (int, float) and field not in getattr(config, 'LAST_VALUE', [])):
                             final_val = round(statistics.mean(values), 2)
                             # If it's a whole number (like 50.0), make it int (50)
                             if final_val.is_integer(): 
