@@ -301,6 +301,14 @@ def rtl_loop(radio_config: dict, mqtt_handler, data_processor, sys_id: str, sys_
                         if dp_f is not None:
                             data_processor.dispatch_reading(clean_id, "dew_point", dp_f, dev_name, model)
 
+                    # Negate battery_ok to work with HA battery binary_sensor logic.
+
+                    if "battery_ok" in data:
+                        if data["battery_ok"] == 0:
+                            data["battery_ok"] = 1
+                        else
+                            data["battery_ok"] = 0
+
                     flat = flatten(data)
                     for key, value in flat.items():
                         if key in getattr(config, 'SKIP_KEYS', []): continue
